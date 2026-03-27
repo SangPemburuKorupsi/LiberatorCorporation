@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pustaka Cerita Malam | V2.3</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { 
+            min-height: 100vh; 
+            background: radial-gradient(circle at 10% 30%, #0a0a0f, #1a0b1e); 
+            background-attachment: fixed; 
+            font-family: 'Segoe UI', sans-serif; 
+            color: #f5e9ff; 
+            padding: 20px;
+        }
+
+        /* Login Popup */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-card {
+            background: #1b0d28; padding: 30px; border-radius: 20px;
+            border: 1px solid #ff7bcb; text-align: center; width: 85%; max-width: 350px;
+        }
+        .login-card input {
+            width: 100%; padding: 12px; margin: 15px 0; border-radius: 10px;
+            border: 1px solid #ff7bcb; background: rgba(0,0,0,0.3); color: white;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            max-width: 1200px; margin: 0 auto 1rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255, 255, 255, 0.05); padding: 10px 20px; border-radius: 15px;
+        }
+        #starCounter { color: #ffeb3b; font-weight: bold; font-size: 1.2rem; }
+        .user-info { font-size: 0.9rem; color: #ff7bcb; font-weight: bold; }
+
+        /* Search Box UI */
+        .search-container { text-align: center; margin-bottom: 15px; }
+        .search-box {
+            padding: 10px 20px; border-radius: 25px; border: 1px solid #ff7bcb;
+            background: rgba(0,0,0,0.3); color: white; outline: none; width: 90%;
+            max-width: 400px; font-family: inherit; font-size: 0.85rem;
+        }
+        .search-box:focus { border-color: #ffeb3b; box-shadow: 0 0 10px rgba(255, 235, 59, 0.2); }
+
+        .glass-panel {
+            background: rgba(15, 5, 25, 0.65); backdrop-filter: blur(12px);
+            border-radius: 2rem; border: 1px solid rgba(255, 130, 200, 0.4);
+            padding: 20px; transition: opacity 0.4s ease;
+        }
+
+        .hide { display: none !important; }
+        .fade-out { opacity: 0; }
+
+        /* Story Reader */
+        .story-content { 
+            min-height: 350px; font-size: 1.05rem; line-height: 1.8; 
+            background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px;
+            white-space: pre-wrap; margin: 15px 0;
+        }
+
+        /* Navigation */
+        .page-nav { display: flex; justify-content: center; gap: 20px; align-items: center; margin: 20px 0; }
+        .nav-btn { background: #ff7bcb; border: none; width: 50px; height: 50px; border-radius: 50%; color: white; cursor: pointer; font-size: 1.2rem; }
+        .nav-btn.disabled { opacity: 0.2; pointer-events: none; }
+        .back-btn { background: none; border: 1px solid #ff7bcb; color: #ff7bcb; padding: 6px 18px; border-radius: 20px; cursor: pointer; }
+
+        /* Comments */
+        .comment-section { margin-top: 30px; border-top: 1px solid #ff7bcb40; padding-top: 20px; }
+        #commentList { max-height: 150px; overflow-y: auto; margin-bottom: 15px; }
+        .comment-item { background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px; margin-bottom: 8px; font-size: 0.85rem; }
+        .comment-input-area { display: flex; gap: 8px; }
+        .comment-input-area input { flex: 1; padding: 10px; border-radius: 10px; border: none; background: #fff; color: #000; }
+        .btn-send { background: #ff7bcb; color: white; border: none; padding: 10px 15px; border-radius: 10px; cursor: pointer; }
+        
+        .story-shelf { display: flex; gap: 1rem; overflow-x: auto; padding: 10px 5px; margin-bottom: 10px;}
+        .story-card { flex: 0 0 220px; background: #1f122b; padding: 20px; border-radius: 20px; border: 1px solid #ff7bcb40; cursor: pointer; transition: transform 0.2s; }
+        .story-card:active { transform: scale(0.95); }
+        
+        /* Shop Section */
+        .shop-section { border-top: 1px dashed #ff7bcb60; padding-top: 20px; margin-top: 10px; }
+        .btn-buy { background: #ffeb3b; color: #000; border: none; padding: 8px 12px; border-radius: 10px; font-weight: bold; font-size: 0.8rem; margin-top: 10px; cursor: pointer; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div id="loginOverlay" class="overlay">
+    <div class="login-card">
+        <h2>Siapa namamu?</h2>
+        <input type="text" id="usernameInput" placeholder="Ketik nama...">
+        <button class="btn-send" style="width: 100%" onclick="handleLogin()">Masuk Pustaka</button>
+        <p id="loginError" style="color: #ff4d4d; font-size: 0.8rem; margin-top: 10px;"></p>
+    </div>
+</div>
+
+<div class="top-bar">
+    <div id="starCounter">⭐ 0</div>
+    <div class="user-info" id="userNameLabel"></div>
+</div>
+
+<div id="lobbySection" class="lobby-container glass-panel">
+    <h1 style="text-align:center; margin-bottom:20px;">Library Malam</h1>
+    
+    <div style="margin-bottom: 25px;">
+        <h4 style="margin-bottom: 10px; color: #ff7bcb;">📚 RAK BUKU 📚</h4>
+        <div class="search-container">
+            <input type="text" id="searchRak" class="search-box" placeholder="Cari buku di rakmu...">
+        </div>
+        <div class="story-shelf" id="storyShelf"></div>
+    </div>
+
+    <div class="shop-section">
+        <h4 style="margin-bottom: 10px; color: #ffeb3b;">🛒 TOKO BUKU MR.LIBERATOR 🛍️</h4>
+        <div class="search-container">
+            <input type="text" id="searchToko" class="search-box" placeholder="Cari buku baru di toko...">
+        </div>
+        <div class="story-shelf" id="shopShelf"></div>
+    </div>
+</div>
+
+<div id="readerSection" class="reader-section glass-panel hide">
+    <button class="back-btn" onclick="backToLobby()">🏠 BACK TO LOBBY</button>
+    <h2 id="readerStoryTitle" style="margin: 15px 0;"></h2>
+    <div class="story-content" id="storyContentDisplay"></div>
+    <div class="page-nav">
+        <button id="prevPageBtn" class="nav-btn" onclick="prevPage()">❮</button>
+        <span id="pageIndicator">1 / 1</span>
+        <button id="nextPageBtn" class="nav-btn" onclick="nextPage()">❯</button>
+    </div>
+    <div class="comment-section">
+        <h4>Komentar Pembaca</h4>
+        <div id="commentList"></div>
+        <div class="comment-input-area">
+            <input type="text" id="inputKomentar" placeholder="Tulis komentar...">
+            <button class="btn-send" onclick="addComment()">Kirim</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const stories = [
+        { id: 1, title: "Raka & Akar Pelangi", price: 0, text: "Di ujung kota kecil yang selalu diguyur hujan, ada seorang anak laki-laki bernama Raka. Ia tinggal bersama ibunya di rumah sederhana dengan atap yang sering bocor. Setiap malam, suara tetesan air jadi lagu pengantar tidur mereka. Raka tidak pernah mengeluh. Baginya, selama ibunya tersenyum, semuanya baik-baik saja.\n\nSuatu hari, ibunya jatuh sakit. Awalnya hanya batuk ringan, tapi lama-lama tubuhnya makin lemah. Raka yang masih kecil tidak benar-benar mengerti apa yang terjadi. Ia hanya tahu satu hal: ibunya harus sembuh. Setiap pagi sebelum sekolah, Raka menyiapkan teh jahe dan roti untuk ibunya. Namun suatu pagi, ibunya tidak bisa bangun dari tempat tidur. Raka panik, lalu teringat pada cerita nenek tua di pasar tentang 'Akar Pelangi' yang bisa menyembuhkan penyakit berat.\n\nDengan nekat, Raka masuk ke dalam hutan larangan di belakang bukit. Hujan deras mengguyur, tapi ia terus berjalan mencari akar yang katanya bercahaya ungu. Hari mulai gelap, Raka tersesat dan hampir menyerah. Tiba-tiba, sesosok rusa putih menuntunnya ke sebuah mata air dengan akar-akar berpendar. Raka mengambil satu akar, berterima kasih pada rusa, lalu berlari pulang. Ibunya meminum ramuan dari akar itu, dan keesokan harinya, senyumnya kembali merekah." },
+        { id: 2, title: "Kirana & Bintang Jatuh", price: 10, text: "Kirana adalah gadis yang suka menatap langit malam dari atap rumahnya. Setiap malam ia berharap bisa bertemu dengan bintang jatuh. Suatu malam, langit berpendar biru keemasan, dan sebuah bintang jatuh mendarat tepat di halaman belakang rumahnya. Bintang itu bukan sekadar batu angkasa, melainkan makhluk kecil bersayap transparan bernama Astra.\n\nAstra terluka dan kehilangan sebagian cahayanya. Kirana pun merawatnya dengan penuh kasih sayang, memberinya madu dan kelopak bunga mawar. Astra bercerita bahwa ia adalah penjaga mimpi, dan tanpa cahaya mimpi, dunia akan kehilangan warna. Kirana bertekad membantu Astra kembali ke angkasa. Mereka berkelana melewati lembah kabut, bertemu kucing berkepala tiga yang baik hati, serta memecahkan teka-teki dari Ratu Angin." },
+        { id: 3, title: "Pintu di Ujung Senja", price: 25, text: "Di sebuah desa yang dikelilingi bukit kapur, hiduplah dua sahabat: Maya dan Bimo. Mereka sering bermain di tepi hutan saat senja. Suatu sore, mereka menemukan sebuah pintu kayu tua berdiri sendiri di antara pepohonan, tanpa dinding. Penasaran, mereka membuka pintu itu. Tiba-tiba, mereka tersedot ke dalam dunia lain yang dipenuhi awan ungu dan sungai berkilauan.\n\nDi dunia itu, semua kenangan menjadi benda nyata. Maya melihat buku gambar masa kecilnya terbang, Bimo melihat sepeda pertamanya terbuat dari emas. Mereka bertemu seorang penjaga bernama Lumin, yang berkata bahwa pintu ini hanya terbuka bagi mereka yang memiliki ikatan persahabatan sejati. Namun ada aturan: mereka harus menemukan 'Kunci Hati' agar bisa kembali sebelum senja benar-benar lenyap." },
+        { id: 4, title: "🖥️ Deretan Angka Sederhana", price: 50, text: `[   JUDUL : Garis kecil di layar   ]
+        
+        • Siapa sangka... Hanya deretan angka biasa bisa mengubah hidup-mu jika bersungguh sungguh...
+
+Langit pagi di halaman sekolah terlihat biasa saja, tapi tidak bagi Arga. Sepatu hitamnya yang mulai pudar melangkah pelan, seolah berharap waktu berjalan lebih lambat. Ia tahu, begitu bel masuk berbunyi, hari yang sama akan terulang lagi.
+
+Arga bukan anak yang bodoh. Nilainya bagus, bahkan sering masuk tiga besar. Tapi di mata teman-temannya, itu tidak berarti apa-apa. Karena Arga punya satu hal yang berbeda.
+
+Ia suka ngoding.
+
+Bukan sekadar hobi iseng, tapi serius. Setiap pulang sekolah, ia duduk berjam-jam di depan laptop tua milik kakaknya, belajar sendiri dari internet yang kadang lemot. Tidak ada yang mengajarinya, tidak ada yang mendukungnya. Bahkan orang tuanya pun tidak benar-benar paham apa yang ia lakukan.
+
+💬  RIO : Ngapain lagi tuh? Ngetik-ngetik gak jelas?
+
+Suara itu datang dari belakang, disusul tawa beberapa anak lain. Arga tidak menoleh. Ia sudah hafal.
+
+💬  ARGA : Biasa.
+
+💬  RIO : Biasa katanya. Emang bisa jadi apa sih dari begituan? Tukang servis komputer?
+
+Tawa makin keras. Arga menggenggam pensilnya lebih erat.
+
+💬  DONI : Gak lah, paling jadi pengangguran yang sok pinter.
+
+Arga diam. Ia tidak melawan. Bukan karena tidak bisa, tapi karena ia tahu percuma.
+
+Guru masuk, pelajaran dimulai, dan semuanya kembali seperti tidak terjadi apa-apa. Tapi di dalam kepala Arga, kata-kata itu tidak hilang.
+
+Hari demi hari berlalu seperti itu. Diejek, direndahkan, dianggap aneh. Bahkan pernah suatu kali, laptopnya hampir disembunyikan oleh teman sekelasnya hanya untuk bahan bercandaan.
+
+💬  RIO : Eh, kita buang aja laptopnya, biar dia normal dikit.
+
+💬  ARGA : Jangan.
+
+Itu satu-satunya kata yang keluar dari mulut Arga, tapi nadanya cukup membuat mereka berhenti. Bukan karena takut, tapi karena mereka melihat sesuatu yang jarang muncul dari Arga.
+
+Keseriusan.
+
+Malam itu, Arga duduk di depan layar laptopnya. Listrik sempat mati tadi sore, jadi ia baru bisa lanjut sekarang. Layarnya redup, kipasnya berisik, tapi itu sudah cukup baginya.
+
+Ia sedang membuat sesuatu.
+
+Bukan tugas sekolah. Bukan juga sekadar latihan.
+
+Sebuah aplikasi sederhana.
+
+Ia tidak tahu apakah ini akan berguna. Ia hanya ingin membuktikan satu hal, minimal untuk dirinya sendiri.
+
+Kalau apa yang ia lakukan tidak sia-sia.
+
+💬  ARGA : Kalau gak ada yang percaya… yaudah.
+
+Jarinya terus mengetik.
+
+💬  ARGA : Gue aja yang percaya.
+
+Beberapa minggu kemudian, di sekolah ada pengumuman lomba teknologi tingkat kota. Tidak banyak yang tertarik. Mayoritas lebih memilih lomba olahraga atau seni.
+
+Arga melihat poster itu lama.
+
+💬  ARGA : …
+
+💬  RIO : Lu mau ikut? Serius?
+
+💬  DONI : Hahaha, ikut lomba apa? Lomba bengong?
+
+Arga tidak menjawab. Ia mengambil kertas pendaftaran.
+
+💬  RIO : Gila, nekat banget.
+
+Hari-hari berikutnya jadi lebih berat. Bukan cuma ejekan biasa, tapi sekarang ditambah sindiran tiap Arga terlihat membawa laptopnya ke sekolah.
+
+💬  DONI : Nih calon juara dunia, lewat.
+
+💬  RIO : Jangan lupa pidatonya ya nanti kalau menang.
+
+Arga tetap diam.
+
+Di rumah, ia mulai bekerja lebih serius. Aplikasi yang tadinya sederhana mulai ia kembangkan. Ia belajar hal-hal baru yang bahkan belum pernah dia pahami sebelumnya. Banyak error, banyak gagal, tapi ia terus lanjut.
+
+Kadang ia tertidur di depan laptop.
+
+Kadang ia bangun dengan kepala berat.
+
+Tapi setiap kali ia ingin berhenti, ia ingat satu hal.
+
+Semua orang sudah menganggapnya gagal, bahkan sebelum ia mencoba.
+
+Hari lomba tiba.
+
+Arga datang sendirian. Peserta lain terlihat percaya diri, beberapa bahkan didampingi guru dan teman-temannya.
+
+Arga hanya membawa laptopnya.
+
+💬  PANITIA : Nama?
+
+💬  ARGA : Arga Pratama.
+
+Ia duduk di kursinya, membuka laptop, dan menarik napas panjang.
+
+💬  ARGA : Ini aja.
+
+Presentasi dimulai satu per satu. Ketika giliran Arga, ruangan terasa lebih sunyi.
+
+Ia tidak pandai bicara. Suaranya sempat sedikit gemetar.
+
+💬  ARGA : Saya membuat aplikasi untuk membantu manajemen tugas harian… dengan sistem pengingat yang bisa menyesuaikan kebiasaan pengguna.
+
+Beberapa juri mulai memperhatikan.
+
+Arga melanjutkan. Perlahan, ia mulai lebih tenang. Ia tidak lagi memikirkan siapa yang menertawakannya di sekolah.
+
+Ia hanya fokus pada apa yang ia buat.
+
+Selesai presentasi, ia kembali duduk. Tidak ada tepuk tangan meriah, hanya beberapa anggukan kecil dari juri.
+
+Pengumuman pemenang dilakukan sore hari.
+
+Arga berdiri di antara banyak peserta lain. Tangannya dingin.
+
+💬  PANITIA : Juara kedua…
+
+Bukan namanya.
+
+💬  PANITIA : Juara pertama…
+
+Arga menunduk sedikit.
+
+💬  PANITIA : Arga Pratama.
+
+Ia diam beberapa detik.
+
+💬  PANITIA : Arga Pratama?
+
+Orang di sebelahnya menepuk bahunya.
+
+💬  PESERTA LAIN : Itu kamu.
+
+Arga maju pelan. Langkahnya terasa ringan, tapi juga aneh. Seperti mimpi.
+
+Ia menerima piala itu tanpa banyak kata.
+
+💬  ARGA : Terima kasih.
+
+Keesokan harinya di sekolah, suasana sedikit berbeda.
+
+Beberapa orang melihatnya.
+
+Beberapa berbisik.
+
+💬  RIO : …
+
+💬  DONI : Itu beneran dia?
+
+Arga berjalan seperti biasa. Tidak ada ekspresi sombong, tidak juga ingin balas dendam.
+
+💬  RIO : Ga nyangka sih.
+
+💬  DONI : Iya…
+
+Untuk pertama kalinya, mereka tidak tertawa.
+
+Arga duduk di bangkunya, membuka buku seperti biasa.
+
+💬  ARGA : …
+
+Ia tidak merasa berubah. Ia masih anak yang sama.
+
+Hanya saja, sekarang ada satu hal yang berbeda.
+
+Apa yang dulu dianggap tidak berguna… ternyata bisa membawa hasil.
+
+Dan itu baru awal.
+
+Arga tidak pernah menyangka perubahan suasana di kelas bisa terasa seaneh ini. Tidak ada lagi tawa keras saat ia membuka laptop, tidak ada lagi sindiran terang-terangan. Tapi bukan berarti semuanya berubah jadi baik.
+
+Lebih tepatnya… mereka hanya diam.
+
+💬  RIO : Jadi… lu menang beneran?
+
+💬  ARGA : Iya.
+
+💬  DONI : Hadiahnya apa?
+
+💬  ARGA : Uang sama sertifikat.
+
+💬  RIO : …
+
+Rio terlihat ingin berkata sesuatu, tapi akhirnya mengurungkan niatnya.
+
+Hari-hari setelah lomba berjalan sedikit lebih tenang. Tidak ada lagi yang mengganggu Arga secara langsung, tapi jarak di antara mereka tetap ada. Arga pun tidak mencoba mendekat.
+
+Ia kembali ke rutinitasnya.
+
+Sekolah, pulang, ngoding.
+
+Bedanya, sekarang ia punya tujuan yang lebih jelas.
+
+Uang dari lomba itu tidak ia habiskan. Ia simpan, lalu sebagian digunakan untuk memperbaiki laptopnya yang sering mati sendiri. Sisanya ia pakai untuk membeli paket internet yang lebih stabil.
+
+💬  ARGA : Biar gak keputus lagi.
+
+Di malam hari, Arga mulai mengembangkan aplikasinya lagi. Ia tidak puas dengan versi yang ia bawa ke lomba. Banyak hal yang menurutnya masih bisa diperbaiki.
+
+Ia mulai belajar tentang bagaimana aplikasi bisa digunakan oleh banyak orang, bukan hanya dirinya sendiri.
+
+Tapi semakin dalam ia belajar, semakin ia sadar satu hal.
+
+Dunia ini lebih besar dari yang ia kira.
+
+💬  ARGA : Gak cukup kalau cuma begini.
+
+Beberapa bulan berlalu. Arga naik ke kelas berikutnya. Tekanan di sekolah mulai berkurang, tapi tantangan baru muncul.
+
+Pelajaran semakin sulit.
+
+Waktu semakin sedikit.
+
+Dan di rumah, keadaan tidak selalu mendukung.
+
+Ayahnya mulai sering mengeluh soal biaya.
+
+💬  AYAH : Kamu itu kalau di rumah jangan cuma main laptop terus.
+
+💬  ARGA : Ini bukan main.
+
+💬  AYAH : Terus apa? Bisa bantu ekonomi?
+
+Arga diam.
+
+💬  AYAH : Nilai kamu bagus, itu yang penting. Fokus ke sekolah. Jangan aneh-aneh.
+
+Kata-kata itu tidak sekeras ejekan teman-temannya dulu, tapi entah kenapa terasa lebih berat.
+
+Malam itu, Arga tidak langsung membuka laptopnya. Ia duduk lama di kasur, memikirkan apa yang harus ia lakukan.
+
+💬  ARGA : Kalau gue berhenti… ya sama aja.
+
+Ia menarik napas panjang, lalu menyalakan laptopnya lagi.
+
+💬  ARGA : Tapi kalau gue lanjut… belum tentu berhasil.
+
+Kursor berkedip di layar.
+
+💬  ARGA : …
+
+Beberapa detik hening.
+
+💬  ARGA : Yaudah.
+
+Jarinya mulai bergerak lagi.
+
+Waktu terus berjalan. Arga mulai mencoba hal baru.
+
+Ia memberanikan diri mengunggah aplikasinya ke internet. Awalnya tidak ada yang memperhatikan. Hanya beberapa orang yang mengunduh, itu pun tanpa komentar.
+
+Tapi Arga tidak berhenti.
+
+Ia memperbaiki bug, menambahkan fitur, dan sesekali membaca komentar dari pengguna asing yang bahkan ia tidak kenal.
+
+💬  USER : Useful app, but needs improvement.
+
+💬  ARGA : Iya…
+
+Ia tersenyum kecil.
+
+💬  ARGA : Setidaknya ada yang pakai.
+
+Suatu hari, saat pulang sekolah, Arga menerima email.
+
+Ia membuka dengan rasa penasaran.
+
+💬  ARGA : Ini apaan?
+
+Isinya singkat.
+
+Seseorang tertarik dengan aplikasinya.
+
+Bukan perusahaan besar, bukan juga sesuatu yang langsung mengubah hidupnya. Hanya sebuah tim kecil yang menawarkan kerja sama sederhana.
+
+Mereka ingin Arga membantu mengembangkan aplikasi yang lebih besar.
+
+💬  ARGA : Serius?
+
+Ia membaca ulang email itu berkali-kali.
+
+💬  ARGA : Ini beneran bukan ya…
+
+Arga ragu.
+
+Ia masih SMP.
+
+Ia tidak punya pengalaman kerja.
+
+Dan ia tidak tahu apakah ini aman.
+
+Malam itu, ia berpikir lama.
+
+💬  ARGA : Kalau gue tolak… mungkin gak ada lagi kesempatan.
+
+💬  ARGA : Tapi kalau gue terima… gue harus tanggung jawab.
+
+Keesokan harinya di sekolah, Arga terlihat lebih diam dari biasanya.
+
+💬  RIO : Lu kenapa?
+
+💬  ARGA : Gak kenapa.
+
+💬  DONI : Tumben.
+
+Arga tidak menjelaskan apa pun.
+
+Sepulang sekolah, ia langsung pulang dan membuka laptopnya.
+
+Ia membalas email itu.
+
+💬  ARGA : Saya tertarik, tapi saya masih pelajar.
+
+Beberapa jam kemudian, balasan datang.
+
+💬  EMAIL : Kami tidak masalah. Selama kamu bisa bekerja dengan kami secara online.
+
+Arga menatap layar itu lama.
+
+💬  ARGA : …
+
+Tangannya sedikit gemetar.
+
+💬  ARGA : Oke.
+
+Itu keputusan pertamanya yang benar-benar berisiko.
+
+Hari-hari berikutnya berubah drastis.
+
+Arga harus membagi waktu antara sekolah dan proyek baru itu. Ia mulai belajar bekerja dalam tim, memahami kode orang lain, dan menyelesaikan tugas dengan tenggat waktu.
+
+Tidak mudah.
+
+Bahkan sering kali ia kewalahan.
+
+💬  ARGA : Kenapa error terus sih…
+
+Ia pernah hampir menyerah saat kodenya tidak berjalan selama dua hari penuh.
+
+💬  ARGA : Gue gak selevel ini.
+
+Tapi setiap kali ia ingin berhenti, ia ingat kembali semua yang sudah ia lewati.
+
+Dari ejekan di kelas, sampai berdiri di depan juri lomba.
+
+💬  ARGA : Udah sejauh ini.
+
+Perlahan, ia mulai terbiasa.
+
+Ia mulai mengerti alur kerja tim.
+
+Ia mulai dipercaya untuk mengerjakan bagian yang lebih penting.
+
+Dan untuk pertama kalinya…
+
+Ia mendapatkan bayaran dari apa yang ia buat.
+
+Tidak besar.
+
+Tapi cukup untuk membuatnya terdiam lama.
+
+💬  ARGA : Jadi… ini bisa jadi uang.
+
+Ia tidak langsung memberi tahu siapa pun.
+
+Tapi malam itu, saat makan malam, ia mengeluarkan sebagian uang itu dan meletakkannya di meja.
+
+💬  AYAH : Ini apa?
+
+💬  ARGA : Dari kerjaan.
+
+💬  AYAH : Kerjaan apa?
+
+💬  ARGA : Ngoding.
+
+Ayahnya terdiam.
+
+Tidak langsung percaya.
+
+💬  AYAH : Kamu jangan macam-macam ya.
+
+💬  ARGA : Ini halal.
+
+Hening beberapa saat.
+
+💬  AYAH : …
+
+Ayahnya mengambil uang itu perlahan.
+
+💬  AYAH : Simpan aja buat kamu.
+
+Arga menggeleng.
+
+💬  ARGA : Buat rumah aja.
+
+Malam itu tidak ada pembicaraan panjang.
+
+Tapi ada sesuatu yang berubah.
+
+Tidak langsung besar.
+
+Tapi cukup terasa.
+
+Dan di kamar kecilnya, dengan laptop yang masih sama, Arga kembali duduk di depan layar.
+
+💬  ARGA : Masih panjang.
+
+Ia menatap kode yang belum selesai.
+
+💬  ARGA : Tapi kayaknya… gue di jalan yang bener.
+
+Cerita belum selesai.
+
+Di depan Arga, masih ada banyak hal yang lebih besar.
+
+Dunia kerja yang sebenarnya.
+
+Tekanan yang lebih berat.
+
+Dan pilihan-pilihan yang akan menentukan masa depannya.
+
+Arga tidak pernah benar-benar punya waktu untuk merasa nyaman.
+
+Masuk SMA, semuanya berubah lagi.
+
+Lingkungannya baru, orang-orangnya berbeda, dan ekspektasi jauh lebih tinggi. Tidak ada yang peduli ia pernah menang lomba waktu SMP. Tidak ada yang tahu ia sudah pernah bekerja secara online.
+
+Di sini, semua orang mulai dari nol.
+
+💬  SISWA 1 : Lu dari SMP mana?
+
+💬  ARGA : Biasa aja.
+
+💬  SISWA 2 : Jurusan mana?
+
+💬  ARGA : IPA.
+
+Percakapan singkat, lalu selesai. Tidak ada yang benar-benar tertarik.
+
+Arga duduk di bangkunya, memperhatikan kelas yang ramai. Kali ini, tidak ada yang membullynya. Tapi juga tidak ada yang mendekat.
+
+Netral.
+
+Dan entah kenapa, itu terasa lebih sepi.
+
+Sepulang sekolah, Arga tetap menjalani rutinitasnya. Bedanya, sekarang tugas sekolah jauh lebih banyak, dan proyek dari timnya juga semakin kompleks.
+
+Ia mulai sering begadang.
+
+💬  ARGA : Deadline lagi…
+
+Matanya mulai berat, tapi ia tetap menatap layar.
+
+💬  ARGA : Dikiiit lagi.
+
+Di sisi lain, tim tempat ia bekerja mulai berkembang. Proyek mereka mulai digunakan oleh lebih banyak orang. Tanggung jawab Arga pun meningkat.
+
+Ia bukan lagi sekadar membantu.
+
+Ia mulai jadi bagian penting.
+
+Suatu malam, Arga mendapat pesan dari ketua timnya.
+
+💬  LEAD : Kita butuh kamu pegang modul utama minggu ini.
+
+💬  ARGA : Saya?
+
+💬  LEAD : Iya. Kamu yang paling ngerti bagian itu sekarang.
+
+Arga membaca pesan itu berulang kali.
+
+💬  ARGA : …
+
+💬  ARGA : Oke.
+
+Itu bukan lagi tugas kecil.
+
+Itu inti dari sistem.
+
+Kalau gagal, dampaknya besar.
+
+Hari-hari berikutnya jadi jauh lebih berat. Arga hampir tidak punya waktu luang. Pulang sekolah, langsung kerja. Malam, lanjut. Kadang sampai ketiduran di depan laptop.
+
+Nilai sekolahnya mulai turun.
+
+💬  GURU : Arga, kamu kenapa akhir-akhir ini?
+
+💬  ARGA : …
+
+💬  GURU : Kamu biasanya konsisten.
+
+💬  ARGA : Lagi capek, Bu.
+
+💬  GURU : Jangan sampai kamu kehilangan arah.
+
+Kata-kata itu menempel di kepala Arga.
+
+Ia mulai sadar, ia tidak bisa terus seperti ini.
+
+Tapi ia juga tidak bisa berhenti.
+
+Di rumah, suasana kembali tegang.
+
+💬  AYAH : Nilai kamu turun.
+
+💬  ARGA : Iya.
+
+💬  AYAH : Kamu sibuk apa sekarang?
+
+Arga diam sejenak.
+
+💬  ARGA : Kerja.
+
+💬  AYAH : Kamu itu masih sekolah.
+
+Nada suaranya lebih tegas dari sebelumnya.
+
+💬  AYAH : Jangan sampai kamu menyesal nanti.
+
+Arga tidak membalas. Ia masuk ke kamar dan menutup pintu.
+
+💬  ARGA : Semua orang bilang jangan.
+
+Ia duduk di kursinya.
+
+💬  ARGA : Tapi gak ada yang tahu rasanya.
+
+Ia membuka laptopnya, tapi kali ini tangannya tidak langsung bergerak.
+
+💬  ARGA : Kalau gue salah gimana…
+
+Keraguan mulai muncul.
+
+Bukan karena orang lain.
+
+Tapi dari dirinya sendiri.
+
+Beberapa hari kemudian, masalah benar-benar datang.
+
+Sistem yang ia kerjakan mengalami error besar.
+
+Aplikasi tidak bisa digunakan oleh banyak pengguna.
+
+Tim panik.
+
+💬  LEAD : Arga, ini dari bagian kamu.
+
+💬  ARGA : Iya… saya cek.
+
+💬  LEAD : Kita gak punya banyak waktu.
+
+Jantung Arga berdetak lebih cepat.
+
+Ia membuka kodenya, mencari kesalahan. Tapi semakin ia mencari, semakin ia bingung.
+
+💬  ARGA : Kenapa gak ketemu…
+
+Jam terus berjalan.
+
+Pesan dari tim terus masuk.
+
+💬  MEMBER : User mulai komplain.
+
+💬  MEMBER : Rating turun.
+
+💬  LEAD : Arga?
+
+Tangan Arga mulai dingin.
+
+💬  ARGA : …
+
+Untuk pertama kalinya sejak ia mulai, Arga benar-benar merasa tidak mampu.
+
+💬  ARGA : Gue gak bisa.
+
+Ia bersandar di kursi, menatap layar kosong.
+
+💬  ARGA : Udah.
+
+Beberapa menit berlalu tanpa ia menyentuh keyboard.
+
+Hening.
+
+Lalu tiba-tiba, ia mengingat sesuatu.
+
+Hari di mana laptopnya hampir diambil.
+
+Hari di mana ia berdiri di lomba sendirian.
+
+Hari di mana ia memutuskan untuk tetap lanjut meski semua orang meragukan.
+
+💬  ARGA : …
+
+Ia menutup matanya sebentar.
+
+💬  ARGA : Kalau berhenti sekarang… sama aja.
+
+Matanya terbuka lagi.
+
+💬  ARGA : Cari lagi.
+
+Ia mulai dari awal.
+
+Pelan, satu per satu.
+
+Membaca ulang.
+
+Memahami ulang.
+
+Jam berganti jam.
+
+Dan akhirnya—
+
+💬  ARGA : Ketemu.
+
+Sebuah kesalahan kecil.
+
+Sangat kecil.
+
+Tapi berdampak besar.
+
+Tangannya langsung bergerak cepat.
+
+💬  ARGA : Fix ini…
+
+Beberapa menit kemudian, sistem kembali normal.
+
+Pesan masuk lagi.
+
+💬  MEMBER : Udah jalan!
+
+💬  MEMBER : Aman!
+
+💬  LEAD : Good job.
+
+Arga bersandar di kursinya, napasnya berat.
+
+💬  ARGA : …
+
+💬  ARGA : Ternyata bisa.
+
+Ia tersenyum kecil.
+
+Bukan karena pujian.
+
+Tapi karena ia tidak menyerah.
+
+Hari berikutnya di sekolah, Arga terlihat lebih tenang.
+
+Meski nilainya belum membaik, ada sesuatu yang berbeda dalam cara ia melihat dirinya sendiri.
+
+💬  ARGA : Gue belum jago.
+
+💬  ARGA : Tapi gue juga bukan yang dulu.
+
+Perjalanan Arga masih panjang.
+
+Ia belum sukses.
+
+Ia masih di tengah jalan.
+
+Masih banyak pilihan sulit di depan.
+
+Dan tidak semuanya akan berjalan sesuai rencana.
+
+Tapi satu hal sudah jelas.
+
+Ia tidak lagi berjalan tanpa arah.
+
+Dan di depan sana…
+
+Akan ada titik di mana semua keputusan ini benar-benar diuji.
+
+Arga mulai mengerti satu hal saat kelas dua SMA berjalan setengah tahun.
+
+Hidup tidak akan menunggu dia siap.
+
+Nilainya belum sepenuhnya pulih. Walau tidak hancur, tetap jauh dari sebelumnya. Guru-guru mulai memperhatikan, orang tuanya mulai khawatir lagi.
+
+Dan di sisi lain, kerjaannya justru semakin besar.
+
+Suatu malam, Arga mendapat pesan yang berbeda dari biasanya.
+
+💬  LEAD : Kita dapat tawaran kerja sama baru.
+
+💬  ARGA : Bagus dong.
+
+💬  LEAD : Perusahaan luar. Skalanya lebih besar.
+
+Arga berhenti mengetik.
+
+💬  ARGA : Terus?
+
+💬  LEAD : Kita butuh komitmen penuh. Deadlinenya ketat.
+
+Kalimat itu sederhana.
+
+Tapi artinya jelas.
+
+💬  ARGA : Full?
+
+💬  LEAD : Iya. Kalau kamu ikut, kamu harus lebih fokus ke sini.
+
+Arga menatap layar lama.
+
+💬  ARGA : …
+
+Di kepalanya, dua hal langsung muncul.
+
+Sekolah.
+
+Dan kesempatan.
+
+Malam itu, ia tidak langsung menjawab.
+
+Ia keluar kamar, melihat ruang tengah yang sepi. Ayahnya sudah tidur di sofa, televisi masih menyala pelan.
+
+Arga berdiri di sana cukup lama.
+
+💬  ARGA : Kalau gue ambil…
+
+💬  ARGA : Sekolah bisa berantakan.
+
+💬  ARGA : Tapi kalau gue tolak…
+
+💬  ARGA : Mungkin gak datang lagi.
+
+Ia kembali ke kamar.
+
+Laptop masih menyala.
+
+Pesan itu masih terbuka.
+
+💬  ARGA : Gue butuh waktu.
+
+Hari-hari berikutnya terasa berat. Arga mulai memikirkan masa depannya secara serius untuk pertama kalinya.
+
+Teman-teman sekelasnya mulai bicara soal jurusan kuliah, universitas, cita-cita.
+
+💬  SISWA 1 : Gue mau teknik.
+
+💬  SISWA 2 : Gue pengen kedokteran.
+
+💬  SISWA 3 : Lu, Ga?
+
+Arga terdiam.
+
+💬  ARGA : …
+
+💬  ARGA : Belum tau.
+
+Padahal, sebenarnya ia tahu.
+
+Jalannya sudah terlihat.
+
+Tapi jalur itu tidak sama dengan yang lain.
+
+Malamnya, Arga akhirnya berbicara dengan ayahnya.
+
+💬  ARGA : Yah, aku mau ngomong.
+
+💬  AYAH : Apa?
+
+💬  ARGA : Aku dapat kerjaan lebih besar.
+
+Ayahnya menoleh.
+
+💬  AYAH : Kerjaan lagi?
+
+💬  ARGA : Iya. Tapi kali ini… lebih serius.
+
+💬  AYAH : Maksudnya?
+
+Arga menarik napas.
+
+💬  ARGA : Kalau aku ambil, aku harus lebih fokus ke situ. Mungkin nilai sekolah turun lagi.
+
+Hening.
+
+💬  AYAH : Kamu mau berhenti sekolah?
+
+💬  ARGA : Enggak.
+
+💬  AYAH : Terus?
+
+💬  ARGA : Aku mau coba jalanin dua-duanya.
+
+Ayahnya menghela napas panjang.
+
+💬  AYAH : Kamu yakin kuat?
+
+💬  ARGA : Gak yakin.
+
+💬  AYAH : …
+
+💬  ARGA : Tapi aku gak mau nyesel.
+
+Kalimat itu sederhana, tapi jujur.
+
+Ayahnya menatap Arga cukup lama.
+
+💬  AYAH : Kamu udah besar.
+
+💬  AYAH : Kalau kamu jatuh, kamu tanggung sendiri.
+
+💬  ARGA : Iya.
+
+💬  AYAH : Tapi…
+
+Arga menunggu.
+
+💬  AYAH : Jangan sampai kamu kehilangan semuanya.
+
+Arga mengangguk.
+
+Malam itu, ia kembali ke kamar dan mengetik satu kalimat.
+
+💬  ARGA : Saya ikut.
+
+Itu keputusan yang mengubah segalanya.
+
+Part 5
+
+Waktu terasa berjalan lebih cepat.
+
+Arga hidup di antara dua dunia.
+
+Pagi sampai siang, ia adalah siswa biasa.
+
+Malam sampai dini hari, ia bekerja seperti profesional.
+
+Tidurnya berkurang.
+
+Waktunya habis.
+
+Tapi hasilnya mulai terlihat.
+
+Proyek besar itu berjalan lancar. Aplikasi mereka mulai digunakan oleh ribuan orang. Nama timnya mulai dikenal di komunitas teknologi.
+
+Dan Arga…
+
+Mulai dikenal juga.
+
+💬  MEMBER : Arga, logic kamu gila sih.
+
+💬  MEMBER 2 : Lu masih SMA ya?
+
+💬  ARGA : Iya.
+
+💬  MEMBER 2 : Gak masuk akal.
+
+Arga hanya tersenyum kecil.
+
+Tapi di balik itu, tekanannya semakin besar.
+
+Suatu hari, ia hampir pingsan di kelas karena kurang tidur.
+
+💬  GURU : Arga!
+
+Suara itu membuatnya tersadar.
+
+💬  GURU : Kamu sakit?
+
+💬  ARGA : Enggak…
+
+💬  GURU : Istirahat dulu.
+
+Hari itu, untuk pertama kalinya, Arga benar-benar berhenti.
+
+Ia pulang lebih awal.
+
+Tidur tanpa membuka laptop.
+
+Dan saat bangun, ia merasa… kosong.
+
+💬  ARGA : Gue capek.
+
+Ia duduk di tepi kasur.
+
+💬  ARGA : Ini mau sampai kapan…
+
+Pertanyaan itu tidak punya jawaban mudah.
+
+Beberapa hari kemudian, hasil ujian keluar.
+
+Nilainya turun lagi.
+
+Tidak hancur, tapi cukup untuk membuatnya sadar.
+
+Ia tidak bisa terus seperti ini.
+
+Malam itu, Arga membuat keputusan kecil.
+
+Ia mulai mengatur ulang waktunya.
+
+Mengurangi jam kerja sedikit.
+
+Mengorbankan sebagian pemasukan.
+
+💬  ARGA : Gak bisa rakus.
+
+Pelan-pelan, hidupnya mulai lebih stabil.
+
+Tidak sempurna, tapi cukup.
+
+Dan waktu pun terus berjalan…
+
+Sampai hari kelulusan tiba.
+
+Part 6
+
+Lapangan sekolah penuh.
+
+Seragam rapi, wajah tegang, campur aduk antara lega dan takut.
+
+Arga berdiri di antara teman-temannya.
+
+Banyak yang sudah punya rencana jelas.
+
+Kuliah.
+
+Merantau.
+
+Mengikuti jalur yang sudah umum.
+
+💬  RIO : Ga.
+
+Arga menoleh.
+
+Sudah lama sejak terakhir mereka bicara seperti ini.
+
+💬  ARGA : Apa?
+
+💬  RIO : Lu lanjut kuliah?
+
+Arga diam sebentar.
+
+💬  ARGA : Mungkin.
+
+💬  RIO : Mungkin?
+
+💬  ARGA : Gue lagi mikir.
+
+Rio mengangguk pelan.
+
+💬  RIO : Dulu gue salah sih.
+
+Arga menatapnya.
+
+💬  RIO : Soal lu.
+
+💬  ARGA : …
+
+💬  RIO : Ternyata… itu bukan hal sia-sia.
+
+Tidak ada tawa.
+
+Tidak ada ejekan.
+
+Hanya pengakuan sederhana.
+
+💬  ARGA : Gak apa.
+
+Rio tersenyum kecil.
+
+💬  RIO : Sukses ya lu nanti.
+
+💬  ARGA : Lu juga.
+
+Upacara selesai.
+
+Orang-orang mulai berpencar.
+
+Arga berdiri sebentar, melihat sekeliling.
+
+💬  ARGA : Selesai juga.
+
+Malam itu, di rumah, ia duduk bersama ayahnya lagi.
+
+💬  AYAH : Jadi?
+
+💬  ARGA : Aku dapat tawaran kerja tetap.
+
+💬  AYAH : …
+
+💬  ARGA : Gaji tetap. Timnya juga berkembang.
+
+💬  AYAH : Kuliah?
+
+💬  ARGA : Bisa sambil. Tapi mungkin gak langsung.
+
+Hening.
+
+💬  AYAH : Kamu yakin?
+
+💬  ARGA : Iya.
+
+💬  AYAH : …
+
+Ayahnya mengangguk pelan.
+
+💬  AYAH : Dulu saya gak ngerti.
+
+Arga menatapnya.
+
+💬  AYAH : Sekarang… saya mulai paham.
+
+Kalimat itu cukup.
+
+Tidak panjang.
+
+Tapi berarti.
+
+Beberapa tahun kemudian…
+
+Arga duduk di sebuah ruangan kerja.
+
+Bukan kamar kecilnya dulu.
+
+Bukan juga tempat yang mewah.
+
+Tapi cukup untuk menunjukkan satu hal.
+
+Ia berhasil.
+
+Aplikasi yang dulu ia buat sendiri, sekarang berkembang jadi platform yang digunakan banyak orang. Timnya membesar. Ia bahkan memimpin beberapa bagian penting.
+
+Laptopnya sudah berganti.
+
+Kondisinya juga berbeda.
+
+Tapi satu hal tetap sama.
+
+💬  ARGA : …
+
+Ia menatap layar.
+
+💬  ARGA : Masih suka ini.
+
+Senyum kecil muncul.
+
+Bukan karena uang.
+
+Bukan karena pengakuan.
+
+Tapi karena ia tidak berhenti dulu.
+
+Dari anak yang dianggap aneh.
+
+Dari yang diremehkan.
+
+Dari yang hampir menyerah.
+
+Sampai akhirnya…
+
+Ia membuktikan dengan caranya sendiri.
+
+----- [ TAMAT ] -----
+
+
+• PESAN MORAL : Tidak semua kemampuan langsung terlihat berguna di mata orang lain, tapi itu tidak berarti tidak berharga. Apa yang dianggap sepele hari ini, bisa jadi kekuatan besar di masa depan. Jangan terlalu bergantung pada pengakuan orang. Kadang, satu-satunya yang harus percaya di awal adalah diri sendiri. Kesuksesan bukan datang dari bakat saja, tapi dari konsistensi, keberanian mengambil risiko, dan tidak berhenti meski diremehkan. Dan yang paling penting, setiap pilihan punya konsekuensi. Jadi jalani dengan tanggung jawab, bukan sekadar ikut-ikutan atau takut gagal.` },
+    ];
+
+    let currentUser = localStorage.getItem('pustaka_user') || null;
+    let stars = parseInt(localStorage.getItem('stars')) || 0;
+    let purchasedIds = JSON.parse(localStorage.getItem('purchased_stories') || "[1]");
+    let currentStory = null;
+    let currentPage = 0;
+    let pages = [];
+
+    function handleLogin() {
+        const input = document.getElementById('usernameInput').value.trim();
+        if(!input) return;
+        localStorage.setItem('pustaka_user', input);
+        currentUser = input;
+        initApp();
+    }
+
+    function initApp() {
+        if(!currentUser) return;
+        document.getElementById('loginOverlay').classList.add('hide');
+        document.getElementById('userNameLabel').innerText = `${currentUser}`;
+        document.getElementById('starCounter').innerText = `⭐ ${stars}`;
+        renderAll();
+    }
+
+    setInterval(() => {
+        if(currentUser) {
+            stars++;
+            document.getElementById('starCounter').innerText = `⭐ ${stars}`;
+            localStorage.setItem('stars', stars);
+        }
+    }, 10000);
+
+    // Fungsi Render Utama
+    function renderAll() {
+        const rakQuery = document.getElementById('searchRak').value.toLowerCase();
+        const tokoQuery = document.getElementById('searchToko').value.toLowerCase();
+        
+        const shelf = document.getElementById('storyShelf');
+        const shop = document.getElementById('shopShelf');
+        
+        shelf.innerHTML = "";
+        shop.innerHTML = "";
+
+        stories.forEach(s => {
+            const isPurchased = purchasedIds.includes(s.id);
+            
+            if(isPurchased) {
+                if(s.title.toLowerCase().includes(rakQuery)) {
+                    const card = document.createElement('div');
+                    card.className = 'story-card';
+                    card.innerHTML = `<h3>${s.title}</h3><p style="font-size:0.7rem; margin-top:10px; color:#ff7bcb;">Buka Cerita ➔</p>`;
+                    card.onclick = () => openStory(s);
+                    shelf.appendChild(card);
+                }
+            } else {
+                if(s.title.toLowerCase().includes(tokoQuery)) {
+                    const card = document.createElement('div');
+                    card.className = 'story-card';
+                    card.innerHTML = `<h3 style="opacity:0.6">${s.title}</h3><button class="btn-buy" onclick="buyStory(${s.id}, ${s.price})">Beli (⭐ ${s.price})</button>`;
+                    shop.appendChild(card);
+                }
+            }
+        });
+
+        if(shelf.innerHTML === "") shelf.innerHTML = "<p style='font-size:0.8rem; color:gray; padding:10px;'>Tidak ada buku.</p>";
+        if(shop.innerHTML === "") shop.innerHTML = "<p style='font-size:0.8rem; color:gray; padding:10px;'>Toko kosong.</p>";
+    }
+
+    // Event listener untuk kotak pencarian
+    document.getElementById('searchRak').oninput = renderAll;
+    document.getElementById('searchToko').oninput = renderAll;
+
+    function buyStory(id, price) {
+        if(stars >= price) {
+            stars -= price;
+            purchasedIds.push(id);
+            localStorage.setItem('stars', stars);
+            localStorage.setItem('purchased_stories', JSON.stringify(purchasedIds));
+            document.getElementById('starCounter').innerText = `⭐ ${stars}`;
+            renderAll();
+        } else {
+            alert("Bintang kurang!");
+        }
+    }
+
+    // --- Reader Logic ---
+    function splitText(text, size = 1000) {
+        const chunks = [];
+        for (let i = 0; i < text.length; i += size) {
+            chunks.push(text.substring(i, i + size));
+        }
+        return chunks;
+    }
+
+    function openStory(story) {
+        currentStory = story;
+        pages = splitText(story.text, 10000);
+        const savedPos = localStorage.getItem(`save_${currentUser}_${story.id}`);
+        currentPage = savedPos ? parseInt(savedPos) : 0;
+        document.getElementById('lobbySection').classList.add('hide');
+        document.getElementById('readerSection').classList.remove('hide');
+        document.getElementById('readerStoryTitle').innerText = story.title;
+        updatePage();
+        renderComments();
+    }
+
+    function updatePage() {
+        const display = document.getElementById('storyContentDisplay');
+        display.classList.add('fade-out');
+        setTimeout(() => {
+            let content = pages[currentPage];
+            if (currentPage < pages.length - 1) content += "-";
+            display.innerText = content;
+            document.getElementById('pageIndicator').innerText = `${currentPage + 1} / ${pages.length}`;
+            document.getElementById('prevPageBtn').classList.toggle('disabled', currentPage === 0);
+            document.getElementById('nextPageBtn').classList.toggle('disabled', currentPage === pages.length - 1);
+            localStorage.setItem(`save_${currentUser}_${currentStory.id}`, currentPage);
+            display.classList.remove('fade-out');
+        }, 300);
+    }
+
+    function nextPage() { if(currentPage < pages.length-1) { currentPage++; updatePage(); } }
+    function prevPage() { if(currentPage > 0) { currentPage--; updatePage(); } }
+    function backToLobby() { 
+        document.getElementById('lobbySection').classList.remove('hide');
+        document.getElementById('readerSection').classList.add('hide');
+    }
+
+    function addComment() {
+        const input = document.getElementById('inputKomentar');
+        if(!input.value) return;
+        let comments = JSON.parse(localStorage.getItem('pustaka_comments') || "[]");
+        comments.push({ storyId: currentStory.id, user: currentUser, text: input.value });
+        localStorage.setItem('pustaka_comments', JSON.stringify(comments));
+        input.value = "";
+        renderComments();
+    }
+
+    function renderComments() {
+        const list = document.getElementById('commentList');
+        const comments = JSON.parse(localStorage.getItem('pustaka_comments') || "[]");
+        list.innerHTML = comments.filter(c => c.storyId === currentStory.id)
+                         .map(c => `<div class="comment-item"><b>${c.user}:</b> ${c.text}</div>`).join('');
+        list.scrollTop = list.scrollHeight;
+    }
+
+    if(currentUser) initApp();
+</script>
+</body>
+</html>
